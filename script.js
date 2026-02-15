@@ -8,18 +8,32 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCards(flashcardsData);
     setupEventListeners();
     updateStats();
+    setupModalHandlers();
 });
 
 // Setup event listeners
 function setupEventListeners() {
-    // Theme toggle
     document.getElementById('themeToggle').addEventListener('click', toggleTheme);
-    
-    // Search
     document.getElementById('searchInput').addEventListener('input', handleSearch);
-    
-    // Category filter
     document.getElementById('categoryFilter').addEventListener('change', handleCategoryFilter);
+}
+
+// Setup modal handlers
+function setupModalHandlers() {
+    // Close modal when clicking outside
+    window.addEventListener('click', (e) => {
+        const modal = document.getElementById('exampleModal');
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+    
+    // Close modal with Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
 }
 
 // Render cards
@@ -53,9 +67,9 @@ function createCardElement(card) {
     const cardDiv = document.createElement('div');
     cardDiv.className = `flashcard ${isStudied ? 'studied' : ''}`;
     cardDiv.setAttribute('data-id', card.id);
-    cardDiv.setAttribute('tabindex', '0');
-    cardDiv.setAttribute('role', 'button');
-    cardDiv.setAttribute('aria-label', `Flashcard ${card.id}`);
+    
+    const hasCodeExample = card.codeExample && card.codeExample.trim();
+    const hasSimpleExplanation = card.simpleExplanation && card.simpleExplanation.trim();
     
     cardDiv.innerHTML = `
         <div class="flashcard-inner">
@@ -70,22 +84,27 @@ function createCardElement(card) {
                 <div class="card-answer">
                     <p><strong>Respuesta:</strong></p>
                     <p>${card.answer}</p>
-                    ${card.example ? `<hr style="margin: 15px 0; border: 1px solid var(--border-color);">
-                    <p><strong>Ejemplo Didáctico:</strong></p>
-                    <p style="white-space: pre-wrap;">${card.example}</p>` : ''}
                 </div>
-                <span class="flip-indicator">🔄</span>
+                <div class="card-actions">
+                    ${hasCodeExample ? `
+                        <button class="example-btn" onclick="showCodeExample(event, ${card.id})">
+                            💻 Ver Código
+                        </button>
+                    ` : ''}
+                    ${hasSimpleExplanation ? `
+                        <button class="example-btn" onclick="showSimpleExplanation(event, ${card.id})">
+                            💡 Explicación Simple
+                        </button>
+                    ` : ''}
+                </div>
             </div>
         </div>
     `;
     
-    // Add click event
-    cardDiv.addEventListener('click', () => flipCard(cardDiv, card.id));
-    
-    // Add keyboard support
-    cardDiv.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
+    // Add click event for flip (only on non-button areas)
+    cardDiv.addEventListener('click', (e) => {
+        // Don't flip if clicking on buttons
+        if (!e.target.closest('.example-btn') && !e.target.closest('.card-actions')) {
             flipCard(cardDiv, card.id);
         }
     });
@@ -115,6 +134,69 @@ function flipCard(cardElement, cardId) {
             }
         }, 300);
     }
+}
+
+// Show code example in modal
+function showCodeExample(event, cardId) {
+    event.stopPropagation(); // Prevent card flip
+    const card = flashcardsData.find(c => c.id === cardId);
+    if (!card || !card.codeExample) return;
+    
+    const modal = document.getElementById('exampleModal');
+    const title = document.getElementById('modalTitle');
+    const body = document.getElementById('modalBody');
+    
+    title.innerHTML = '💻 Ejemplo de Código';
+    body.innerHTML = `
+        <h3>${card.question}</h3>
+        <pre><code>${escapeHtml(card.codeExample)}</code></pre>
+    `;
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+// Show simple explanation in modal
+function showSimpleExplanation(event, cardId) {
+    event.stopPropagation(); // Prevent card flip
+    const card = flashcardsData.find(c => c.id === cardId);
+    if (!card || !card.simpleExplanation) return;
+    
+    const modal = document.getElementById('exampleModal');
+    const title = document.getElementById('modalTitle');
+    const body = document.getElementById('modalBody');
+    
+    title.innerHTML = '💡 Explicación Didáctica';
+    
+    // Convert line breaks to paragraphs
+    const paragraphs = card.simpleExplanation
+        .split('\n\n')
+        .map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`)
+        .join('');
+    
+    body.innerHTML = `
+        <h3>${card.question}</h3>
+        <div class="simple-explanation">
+            ${paragraphs}
+        </div>
+    `;
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+// Close modal
+function closeModal() {
+    const modal = document.getElementById('exampleModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// Escape HTML for code display
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // Get category name
@@ -147,17 +229,16 @@ function handleCategoryFilter(e) {
 function filterCards(searchTerm, category) {
     let filtered = flashcardsData;
     
-    // Filter by category
     if (category !== 'all') {
         filtered = filtered.filter(card => card.category === category);
     }
     
-    // Filter by search term
     if (searchTerm) {
         filtered = filtered.filter(card => 
             card.question.toLowerCase().includes(searchTerm) ||
             card.answer.toLowerCase().includes(searchTerm) ||
-            (card.example && card.example.toLowerCase().includes(searchTerm))
+            (card.codeExample && card.codeExample.toLowerCase().includes(searchTerm)) ||
+            (card.simpleExplanation && card.simpleExplanation.toLowerCase().includes(searchTerm))
         );
     }
     
@@ -191,7 +272,6 @@ function toggleTheme() {
     html.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
     
-    // Update icon
     const icon = document.querySelector('.theme-icon');
     icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
 }
@@ -202,9 +282,4 @@ function loadTheme() {
     
     const icon = document.querySelector('.theme-icon');
     icon.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
-}
-
-// Export for testing
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { filterCards, getCategoryName };
 }
