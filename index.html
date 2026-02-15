@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flashcards - Preparación Entrevista Backend .NET</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles-v2.css">
 </head>
 <body>
     <div class="container">
@@ -44,11 +44,11 @@
             <div class="stats">
                 <div class="stat-item">
                     <span class="stat-label">Total:</span>
-                    <span class="stat-value" id="totalCards">60</span>
+                    <span class="stat-value" id="totalCards">10</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-label">Mostrando:</span>
-                    <span class="stat-value" id="visibleCards">60</span>
+                    <span class="stat-value" id="visibleCards">10</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-label">Estudiadas:</span>
@@ -59,7 +59,7 @@
 
         <!-- Instructions -->
         <div class="instructions">
-            <p>💡 <strong>Haz click en una tarjeta</strong> para ver la respuesta. Las tarjetas se marcarán como estudiadas automáticamente.</p>
+            <p>💡 <strong>Haz click en una tarjeta</strong> para ver la respuesta. Usa los botones <strong>💻 Ver Código</strong> y <strong>💡 Explicación Simple</strong> para ejemplos detallados.</p>
         </div>
 
         <!-- Cards Grid -->
@@ -79,7 +79,20 @@
         </footer>
     </div>
 
-    <script src="data.js"></script>
-    <script src="script.js"></script>
+    <!-- Modal for Examples -->
+    <div id="exampleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle"></h2>
+                <button class="modal-close" onclick="closeModal()" aria-label="Cerrar">×</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Content will be inserted dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <script src="data-v2.js"></script>
+    <script src="script-v2.js"></script>
 </body>
 </html>
