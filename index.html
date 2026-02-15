@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcards - Preparación Entrevista Backend .NET</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="header-content">
+                <h1>🎯 Flashcards de Entrevista</h1>
+                <p class="subtitle">Preparación técnica Backend .NET & Clean Architecture</p>
+                <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="search-container">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="🔍 Buscar en las flashcards..." 
+                    class="search-input"
+                >
+            </div>
+            
+            <div class="filter-container">
+                <label for="categoryFilter">Categoría:</label>
+                <select id="categoryFilter" class="filter-select">
+                    <option value="all">Todas las categorías</option>
+                    <option value="backend">Backend Junior (.NET Core)</option>
+                    <option value="architecture">Clean Architecture</option>
+                    <option value="frontend">Desarrollo Frontend</option>
+                    <option value="ml">Machine Learning</option>
+                </select>
+            </div>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-label">Total:</span>
+                    <span class="stat-value" id="totalCards">60</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Mostrando:</span>
+                    <span class="stat-value" id="visibleCards">60</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Estudiadas:</span>
+                    <span class="stat-value" id="studiedCards">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="instructions">
+            <p>💡 <strong>Haz click en una tarjeta</strong> para ver la respuesta. Las tarjetas se marcarán como estudiadas automáticamente.</p>
+        </div>
+
+        <!-- Cards Grid -->
+        <div class="cards-grid" id="cardsGrid">
+            <!-- Cards will be dynamically inserted here -->
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <p>😕 No se encontraron flashcards con esos criterios.</p>
+            <button class="reset-btn" onclick="resetFilters()">Mostrar todas</button>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>Creado para la preparación de entrevistas técnicas | <a href="https://github.com/vafasca" target="_blank">@vafasca</a></p>
+        </footer>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
