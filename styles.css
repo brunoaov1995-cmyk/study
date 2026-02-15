@@ -208,7 +208,7 @@ header {
 /* Flashcard */
 .flashcard {
     perspective: 1000px;
-    height: 280px;
+    height: 320px;
     cursor: pointer;
 }
 
@@ -234,9 +234,9 @@ header {
     padding: 25px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     box-shadow: var(--shadow);
     transition: all 0.3s ease;
+    overflow: hidden;
 }
 
 .flashcard:hover .flashcard-front,
@@ -248,6 +248,7 @@ header {
 .flashcard-front {
     background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
     color: white;
+    justify-content: center;
 }
 
 .flashcard-back {
@@ -255,6 +256,7 @@ header {
     color: var(--text-primary);
     transform: rotateY(180deg);
     border: 2px solid var(--border-color);
+    justify-content: space-between;
 }
 
 .card-number {
@@ -281,21 +283,81 @@ header {
 }
 
 .card-question {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     font-weight: 600;
     line-height: 1.5;
     margin-top: 30px;
     text-align: center;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    padding: 0 10px;
 }
 
 .card-answer {
-    font-size: 1rem;
-    line-height: 1.7;
+    font-size: 0.95rem;
+    line-height: 1.6;
     text-align: left;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 5px;
+    margin-bottom: 10px;
+}
+
+.card-answer::-webkit-scrollbar {
+    width: 6px;
+}
+
+.card-answer::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+    border-radius: 3px;
+}
+
+.card-answer::-webkit-scrollbar-thumb {
+    background: var(--accent-primary);
+    border-radius: 3px;
 }
 
 .card-answer strong {
     color: var(--accent-primary);
+}
+
+/* Card Action Buttons */
+.card-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: auto;
+    padding-top: 10px;
+}
+
+.example-btn {
+    padding: 8px 12px;
+    border: 2px solid var(--accent-primary);
+    background: var(--bg-card);
+    color: var(--accent-primary);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex: 1;
+}
+
+.example-btn:hover {
+    background: var(--accent-primary);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.example-btn:active {
+    transform: translateY(0);
 }
 
 .flip-indicator {
@@ -316,6 +378,154 @@ header {
     border-radius: 20px;
     font-size: 0.75rem;
     font-weight: 600;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.3s ease;
+}
+
+.modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal-content {
+    background: var(--bg-card);
+    border-radius: 20px;
+    max-width: 900px;
+    width: 100%;
+    max-height: 85vh;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    animation: slideUp 0.4s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: white;
+    padding: 25px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.modal-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 1.8rem;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    line-height: 1;
+}
+
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: var(--accent-primary);
+    border-radius: 4px;
+}
+
+.modal-body h3 {
+    color: var(--accent-primary);
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+}
+
+.modal-body p {
+    line-height: 1.8;
+    margin-bottom: 15px;
+    font-size: 1rem;
+}
+
+.modal-body pre {
+    background: var(--bg-primary);
+    padding: 20px;
+    border-radius: 10px;
+    overflow-x: auto;
+    border: 2px solid var(--border-color);
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.modal-body code {
+    color: var(--accent-primary);
+    font-weight: 600;
+}
+
+.simple-explanation {
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.05), rgba(124, 58, 237, 0.05));
+    padding: 20px;
+    border-radius: 12px;
+    border-left: 4px solid var(--accent-primary);
+    margin: 15px 0;
+}
+
+.simple-explanation p {
+    margin-bottom: 10px;
+}
+
+.simple-explanation strong {
+    color: var(--accent-primary);
 }
 
 /* Empty State */
@@ -411,15 +621,28 @@ footer a:hover {
     }
 
     .flashcard {
-        height: 250px;
+        height: 300px;
     }
 
     .card-question {
-        font-size: 1rem;
+        font-size: 0.95rem;
     }
 
     .card-answer {
-        font-size: 0.95rem;
+        font-size: 0.9rem;
+    }
+
+    .modal-content {
+        max-width: 95%;
+        max-height: 90vh;
+    }
+
+    .modal-body {
+        padding: 20px;
+    }
+
+    .modal-title {
+        font-size: 1.1rem;
     }
 }
 
@@ -441,11 +664,12 @@ footer a:hover {
     }
 
     .flashcard {
-        height: 230px;
+        height: 280px;
     }
 
-    .card-question {
-        font-size: 0.95rem;
+    .example-btn {
+        font-size: 0.75rem;
+        padding: 6px 10px;
     }
 }
 
@@ -453,11 +677,9 @@ footer a:hover {
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(20px);
     }
     to {
         opacity: 1;
-        transform: translateY(0);
     }
 }
 
