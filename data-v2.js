@@ -1321,5 +1321,518 @@ const routes = [
 → Recorre TODA la tabla
 → Cost: 95%`,
         simpleExplanation: "🔍 Buscar tu auto en estacionamiento:\n\n**Index Seek (mejor)** 🎯:\nApp dice: \"Fila B, Posición 12\"\nVas directo → 30 segundos\n\n**Index Scan (regular)** 🚶:\nTienes mapa del estacionamiento\nRecorres fila por fila mirando mapa\n→ 5 minutos\n\n**Table Scan (pésimo)** 🏃:\nSin mapa, revisas TODO\nAuto por auto\n→ 30 minutos\n\n🎯 Objetivo: Seek. Si ves Scan en plan de ejecución, necesitas mejor índice."
+    },
+    {
+        id: 61,
+        category: "backend",
+        question: "¿Por qué el backend del proyecto de invernaderos era una Web API pura sin vistas Razor o cshtml?",
+        answer: "Porque el frontend era una aplicación separada en Angular que consumía los endpoints REST. El backend solo devolvía JSON, no HTML.",
+        codeExample: `// Web API pura: solo JSON
+[HttpGet]
+public async Task<IActionResult> GetSensors() {
+    var sensors = await _service.GetAllAsync();
+    return Ok(sensors); // → JSON, nunca HTML
+}
+
+// NO existía esto en el proyecto:
+// return View(sensors); ← MVC con Razor
+// return Page();        ← Razor Pages
+
+// ¿Por qué?
+// Angular consumía el JSON
+// y renderizaba las vistas él mismo`,
+        simpleExplanation: "🍽️ Restaurante con cocina separada del comedor:\n\n**Web API pura**:\nCocina (backend) → prepara comida (JSON)\nMesero (Angular) → la lleva y sirve al cliente\n\n❌ La cocina NO decora los platos (HTML)\n✅ La cocina solo cocina\n✅ El mesero presenta el plato\n\n🎯 Real: Documentar en Postman era esencial porque había un equipo Angular separado que consumía la API. Si el backend generara vistas, no necesitarías documentar para nadie."
+    },
+    {
+        id: 62,
+        category: "frontend",
+        question: "¿Qué framework de frontend consumía los endpoints REST del sistema de invernaderos y por qué era una elección natural en 2020?",
+        answer: "Angular, porque en 2020 era el framework estándar para dashboards empresariales con backend en .NET, y Microsoft tenía templates oficiales de ASP.NET Core con Angular integrado.",
+        codeExample: `// Template oficial Microsoft en 2020
+dotnet new angular
+
+// Generaba:
+├── ClientApp/          ← Angular
+│   ├── src/
+│   │   ├── app/
+│   │   └── environments/
+└── Controllers/        ← ASP.NET Core API
+    └── WeatherForecastController.cs
+
+// Angular 9 lanzado: Febrero 2020
+// Angular 10 lanzado: Junio 2020
+// Versión activa durante el proyecto`,
+        simpleExplanation: "🤝 Angular + .NET en 2020 era matrimonio natural:\n\n**¿Por qué Angular?**\n- Microsoft tenía template oficial ASP.NET Core + Angular\n- Angular 9/10 estaba en su punto más maduro\n- Dashboard con datos en tiempo real → Angular ideal\n- Tipado fuerte (TypeScript) = Menos errores\n\n**¿Por qué no React o Vue?**\n- El stack del equipo era Microsoft\n- Angular encajaba perfectamente con ese ecosistema\n\n🎯 Mi primer contacto real con Angular fue en ese proyecto viendo cómo el equipo frontend consumía los endpoints que yo construía."
+    },
+    {
+        id: 63,
+        category: "frontend",
+        question: "¿Qué es HttpClient de Angular y cómo se usaba para consumir los endpoints del backend?",
+        answer: "Es el módulo de Angular para hacer peticiones HTTP. Devuelve Observables de RxJS y se inyecta como dependencia en los servicios de Angular.",
+        codeExample: `// Servicio Angular consumiendo el backend
+@Injectable({ providedIn: 'root' })
+export class ReadingService {
+  constructor(private http: HttpClient) {}
+
+  getReadings(
+    sensorId: number,
+    from: string,
+    to: string
+  ): Observable<ReadingDto[]> {
+    const params = new HttpParams()
+      .set('sensorId', sensorId)
+      .set('from', from)
+      .set('to', to);
+
+    return this.http.get<ReadingDto[]>(
+      '/api/readings',
+      { params }
+    );
+  }
+}`,
+        simpleExplanation: "📞 HttpClient es el teléfono de Angular:\n\n**Sin HttpClient**: Angular no puede hablar con el backend\n\n**Con HttpClient**:\nAngular llama al backend → Backend responde con JSON → Angular recibe el dato\n\n**¿Por qué devuelve Observable y no el dato directo?**\nPorque HTTP es asíncrono — el dato no llega instantáneo, llega cuando el servidor responde.\n\n🎯 Es como pedir pizza: no la tienes ahora, te avisarán cuando llegue (Observable se activa cuando llega la respuesta)."
+    },
+    {
+        id: 64,
+        category: "frontend",
+        question: "¿Qué es un HTTP Interceptor en Angular y para qué servía en el proyecto de invernaderos?",
+        answer: "Es un mecanismo que intercepta todas las peticiones HTTP salientes para agregarles automáticamente el token de autorización sin que cada servicio lo haga manualmente.",
+        codeExample: `// HTTP Interceptor con token
+@Injectable()
+export class AuthInterceptor implements HttpInterceptor {
+  intercept(req: HttpRequest<any>, next: HttpHandler) {
+    const token = localStorage.getItem('token');
+
+    if (token) {
+      const authReq = req.clone({
+        headers: req.headers.set(
+          'Authorization',
+          \`Bearer \${token}\`
+        )
+      });
+      return next.handle(authReq);
+    }
+
+    return next.handle(req);
+  }
+}
+
+// Resultado en cada petición:
+// GET /api/readings
+// Authorization: Bearer eyJhbGc...`,
+        simpleExplanation: "🔑 El Interceptor es como un asistente que firma todos tus documentos:\n\n**Sin Interceptor**:\nCada servicio Angular debe agregar el token manualmente → 20 servicios = 20 lugares donde poner el token 😰\n\n**Con Interceptor**:\nUn solo lugar intercepta TODAS las peticiones → Agrega el token automáticamente a todas 😊\n\n🎯 En invernaderos: El dashboard tenía múltiples servicios (sensores, lecturas, usuarios). El Interceptor enviaba el token de Identity en todos sin repetir código."
+    },
+    {
+        id: 65,
+        category: "frontend",
+        question: "¿Cómo consumía Angular el endpoint de historial de lecturas con filtros de fecha?",
+        answer: "Usando HttpClient con HttpParams para construir los query params, recibiendo un Observable que se suscribía en el componente para actualizar la vista.",
+        codeExample: `// Servicio: construye la petición
+getReadings(sensorId: number, from: string, to: string) {
+  const params = new HttpParams()
+    .set('sensorId', sensorId)
+    .set('from', from)
+    .set('to', to);
+  return this.http.get<Reading[]>('/api/readings', { params });
+  // Resultado: GET /api/readings?sensorId=5&from=2020-06-01&to=2020-06-30
+}
+
+// Componente: se suscribe y actualiza la vista
+this.readingService.getReadings(5, '2020-06-01', '2020-06-30')
+  .subscribe(readings => {
+    this.readings = readings; // Vista se actualiza automáticamente
+  });`,
+        simpleExplanation: "🔄 El flujo completo era:\n\n1️⃣ Técnico selecciona sensor y fechas en el formulario Angular\n2️⃣ Componente llama al servicio Angular\n3️⃣ Servicio construye URL: /api/readings?sensorId=5&from=...\n4️⃣ HttpClient hace el GET a nuestro backend .NET\n5️⃣ Backend filtra con LINQ (con índice compuesto)\n6️⃣ Devuelve JSON con lecturas\n7️⃣ Angular recibe el Observable\n8️⃣ Vista se actualiza con los datos en tabla/gráfica\n\n🎯 Mi trabajo era garantizar los pasos 4-6. Los pasos 1-3 y 7-8 eran del equipo frontend."
+    },
+    {
+        id: 66,
+        category: "frontend",
+        question: "¿Cómo consumía Angular el CRUD de sensores? ¿Qué verbo HTTP usaba para cada operación?",
+        answer: "GET para consultar, POST para crear, PUT para actualizar y DELETE o PATCH para desactivar, todos desde servicios Angular con HttpClient.",
+        codeExample: `// Servicio Angular - CRUD de Sensores
+@Injectable({ providedIn: 'root' })
+export class SensorService {
+  private url = '/api/sensors';
+
+  // READ: Lista de sensores
+  getAll(): Observable<SensorDto[]> {
+    return this.http.get<SensorDto[]>(this.url);
+  }
+
+  // CREATE: Crear sensor nuevo
+  create(dto: CreateSensorDto): Observable<SensorDto> {
+    return this.http.post<SensorDto>(this.url, dto);
+  }
+
+  // UPDATE: Actualizar rangos
+  update(id: number, dto: UpdateSensorDto): Observable<SensorDto> {
+    return this.http.put<SensorDto>(\`\${this.url}/\${id}\`, dto);
+  }
+
+  // DELETE: Desactivar sensor
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(\`\${this.url}/\${id}\`);
+  }
+}`,
+        simpleExplanation: "📋 Cada acción del administrador en el dashboard disparaba un verbo HTTP:\n\n🟢 **Ver tabla de sensores** → GET /api/sensors\n🔵 **Formulario nuevo sensor** → POST /api/sensors\n🟡 **Editar rangos de temperatura** → PUT /api/sensors/5\n🔴 **Desactivar sensor** → DELETE /api/sensors/5\n\nAngular enviaba el token en todos via Interceptor.\nNuestro backend validaba el rol Admin antes de ejecutar cada uno.\n\n🎯 Mi parte: Garantizar que cada endpoint respondiera el JSON correcto. La parte Angular era del equipo frontend."
+    },
+    {
+        id: 67,
+        category: "backend",
+        question: "¿Qué es FIWARE Orion Context Broker y qué rol cumplía en el sistema de invernaderos?",
+        answer: "Es una plataforma IoT de código abierto que centraliza y normaliza datos de sensores en un formato estándar llamado NGSIv2, exponiendo una API REST que nuestro backend consumía.",
+        codeExample: `// FIWARE en el flujo del sistema
+
+Sensor físico → Cloudino → FIWARE Orion
+                                ↓
+                    API REST (NGSIv2)
+                    GET /v2/entities?type=Sensor
+                                ↓
+                    {
+                      "id": "Sensor:001",
+                      "type": "Sensor",
+                      "temperature": { "value": 28.5 },
+                      "humidity": { "value": 65.2 },
+                      "dateObserved": { "value": "2020-06-15T14:00:00Z" }
+                    }
+                                ↓
+                    Nuestro backend consumía esto
+                    y lo persistía en SQL Server`,
+        simpleExplanation: "🌐 FIWARE era el intermediario universal:\n\n**Problema sin FIWARE**:\n50 sensores de 5 marcas diferentes\nCada uno habla su propio idioma 😰\n\n**FIWARE como traductor**:\nSensor A habla inglés ↘\nSensor B habla chino  → FIWARE → Todos hablan español (NGSIv2)\nSensor C habla árabe ↗\n\n🎯 El equipo IoT en México configuró FIWARE. Yo consumía la API de FIWARE desde el backend — ya no me preocupaba cómo hablaba cada sensor, todo llegaba normalizado."
+    },
+    {
+        id: 68,
+        category: "backend",
+        question: "¿Qué es Cloudino y qué función cumplía en la arquitectura IoT del sistema?",
+        answer: "Es un dispositivo basado en Arduino con conectividad WiFi que digitalizaba las señales de los sensores físicos y las enviaba a FIWARE Orion.",
+        codeExample: `// Flujo con Cloudino
+
+Temperatura ambiente (señal física)
+        ↓
+  Sensor físico
+  (termistor, sonda, etc.)
+        ↓
+   [CLOUDINO]
+   (Arduino + WiFi)
+   - Lee señal analógica del sensor
+   - Convierte a valor digital (ej: 28.5°C)
+   - Envía via HTTP/MQTT a FIWARE
+        ↓
+  FIWARE Orion
+  (ya normalizado)
+        ↓
+  Nuestro backend .NET`,
+        simpleExplanation: "🌡️ Cloudino era el traductor físico-digital:\n\n**El problema**:\nUn sensor de temperatura es solo un cable que cambia su resistencia eléctrica con el calor.\nEl internet no entiende de resistencias eléctricas 😅\n\n**Cloudino**:\n\"La resistencia cambió → Eso equivale a 28.5°C → Lo envío como JSON a FIWARE\"\n\n🎯 Era el hardware que conectaba el mundo físico (calor, humedad) con el mundo digital (nuestra API). Yo no lo configuré — era responsabilidad del equipo IoT en México."
+    },
+    {
+        id: 69,
+        category: "backend",
+        question: "¿Qué es el formato NGSIv2 y por qué era importante para el consumo de la API de FIWARE?",
+        answer: "Es el formato estándar de datos de FIWARE que normaliza la información de sensores en JSON estructurado, independientemente del fabricante del sensor.",
+        codeExample: `// Respuesta típica de FIWARE en NGSIv2
+{
+  "id": "Sensor:Invernadero-A-001",
+  "type": "TemperatureSensor",
+  "temperature": {
+    "type": "Number",
+    "value": 28.5,
+    "metadata": {}
+  },
+  "humidity": {
+    "type": "Number",
+    "value": 65.2,
+    "metadata": {}
+  },
+  "dateObserved": {
+    "type": "DateTime",
+    "value": "2020-06-15T14:30:00Z"
+  }
+}
+
+// Nuestro backend deserializaba esto
+// a clases C# para persistir en SQL Server`,
+        simpleExplanation: "📋 NGSIv2 era el formulario estándar:\n\n**Sin estándar**:\nEmpresa A reporta: \"temp:28\"\nEmpresa B reporta: \"T_celsius=28.5\"\nEmpresa C reporta: \"temperature_reading: 28.50°C\"\nTu código: 😵‍💫\n\n**Con NGSIv2**:\nTodas reportan:\n{ \"temperature\": { \"value\": 28.5 } }\nTu código: 😊 Siempre igual\n\n🎯 Yo deserializaba ese JSON a clases C# en el backend. Si FIWARE cambiaba el formato, solo ajustaba el DTO externo — el resto del sistema no se enteraba."
+    },
+    {
+        id: 70,
+        category: "backend",
+        question: "¿Qué es IHttpClientFactory y por qué se usaba en lugar de instanciar HttpClient con 'new' directamente?",
+        answer: "Es una fábrica que gestiona un pool de conexiones HTTP reutilizables, evitando el problema de socket exhaustion que ocurre al crear y destruir HttpClient constantemente.",
+        codeExample: `// ❌ PROBLEMA: new HttpClient() directo
+public class FiwareClient {
+    public async Task<string> GetData() {
+        using var client = new HttpClient(); // Nueva instancia
+        return await client.GetStringAsync(url);
+        // Al salir del using: cierra el socket
+        // Con muchas peticiones: se agotan los sockets
+        // Socket exhaustion 💥
+    }
+}
+
+// ✅ SOLUCIÓN: IHttpClientFactory
+public class FiwareClient {
+    private readonly HttpClient _client;
+    
+    public FiwareClient(HttpClient client) {
+        _client = client; // Pool administrado
+    }
+    
+    public async Task<string> GetData() {
+        return await _client.GetStringAsync(url);
+        // Reutiliza conexiones del pool 😊
+    }
+}
+
+// En Startup.cs:
+services.AddHttpClient<IFiwareClient, FiwareClient>(client => {
+    client.BaseAddress = new Uri(config["Fiware:BaseUrl"]);
+});`,
+        simpleExplanation: "🚿 Es como el agua de la ducha:\n\n**new HttpClient() (malo)**:\nAbres grifo → usas agua → cierras grifo (pero el tubo queda bloqueado 10s)\nMuchas personas haciendo esto → Se bloquean todos los tubos 😰\n= Socket exhaustion\n\n**IHttpClientFactory (bueno)**:\nHay un sistema central de agua\nGestiona las tuberías inteligentemente\nReutiliza conexiones en lugar de crear nuevas\n😊 Nunca se agotan los tubos\n\n🎯 En invernaderos: El proceso de polling a FIWARE hacía muchas peticiones. Sin IHttpClientFactory, habríamos agotado los sockets del servidor."
+    },
+    {
+        id: 71,
+        category: "backend",
+        question: "¿Cómo se registraba y usaba IHttpClientFactory en el proyecto para consumir la API de FIWARE?",
+        answer: "Se registraba en Startup.cs con AddHttpClient<T>, configurando la URL base de FIWARE, y se inyectaba automáticamente en el cliente tipado via DI.",
+        codeExample: `// 1. Registro en Startup.cs
+services.AddHttpClient<IFiwareClient, FiwareClient>(client => {
+    client.BaseAddress = new Uri(configuration["Fiware:BaseUrl"]);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
+
+// 2. Cliente tipado
+public class FiwareClient : IFiwareClient {
+    private readonly HttpClient _httpClient;
+    
+    public FiwareClient(HttpClient httpClient) {
+        _httpClient = httpClient;
+    }
+    
+    public async Task<List<SensorReadingDto>> GetLatestReadingsAsync() {
+        var response = await _httpClient.GetAsync("/v2/entities?type=Sensor");
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<List<SensorReadingDto>>(json);
+    }
+}
+
+// 3. Inyectado en el Service via DI
+public class ReadingIngestionService {
+    private readonly IFiwareClient _fiwareClient;
+    
+    public ReadingIngestionService(IFiwareClient fiwareClient) {
+        _fiwareClient = fiwareClient;
+    }
+}`,
+        simpleExplanation: "🔗 Todo conectado con DI:\n\n1️⃣ **Startup.cs**: Registras FiwareClient con URL de FIWARE\n2️⃣ **FiwareClient**: Recibe HttpClient por constructor (DI)\n3️⃣ **ReadingIngestionService**: Recibe IFiwareClient por constructor (DI)\n\nEl contenedor de DI gestiona todo el ciclo de vida.\n\n🎯 Esto conecta directamente con el bullet de DI en tu CV — IHttpClientFactory es parte del mismo contenedor que registraba Services y Repositories. Todo el sistema compartía el mismo patrón."
+    },
+    {
+        id: 72,
+        category: "backend",
+        question: "¿Cómo funcionaba el proceso de polling que traía datos de FIWARE al sistema?",
+        answer: "Un proceso ejecutaba periódicamente llamadas a la API de FIWARE, deserializaba el JSON NGSIv2 a DTOs internos, y los persistía en SQL Server via el Repository.",
+        codeExample: `// Proceso de ingesta periódica
+public class ReadingIngestionService {
+    private readonly IFiwareClient _fiwareClient;
+    private readonly IReadingRepository _repo;
+    
+    public async Task IngestLatestReadingsAsync() {
+        // 1. Consulta FIWARE
+        var fiwareReadings = await _fiwareClient.GetLatestReadingsAsync();
+        
+        // 2. Transforma DTO externo → entidad interna
+        var readings = fiwareReadings.Select(fr => new Reading {
+            SensorId   = ResolveSensorId(fr.Id),
+            Temperature = fr.Temperature.Value,
+            Humidity    = fr.Humidity.Value,
+            Timestamp   = fr.DateObserved.Value
+        }).ToList();
+        
+        // 3. Persiste en SQL Server
+        await _repo.AddRangeAsync(readings);
+    }
+}
+
+// FLUJO:
+// FIWARE API → DTO externo → Entidad → SQL Server
+// (El DTO externo aísla el formato NGSIv2
+//  del resto del sistema)`,
+        simpleExplanation: "📦 Era como un empleado de recepción:\n\n1️⃣ Cada X minutos: Llama a FIWARE (pregunta si hay paquetes nuevos)\n2️⃣ FIWARE responde con JSON NGSIv2 (lista de paquetes)\n3️⃣ El proceso convierte ese JSON a nuestras entidades internas (abre y re-empaca los paquetes)\n4️⃣ Guarda en SQL Server (archiva en bodega)\n\n🎯 El DTO externo (NGSIv2) era clave: Si FIWARE cambiaba su formato, solo cambiaba el DTO externo. El Repository, el Service, el endpoint de lecturas — todo lo demás seguía igual."
+    },
+    {
+        id: 73,
+        category: "backend",
+        question: "¿Por qué las Lecturas (Readings) no tenían operaciones Update ni Delete en el CRUD del sistema?",
+        answer: "Porque son datos históricos reales — si un sensor registró 38°C en un momento dado, ese dato ocurrió. Modificarlo o eliminarlo comprometería la integridad del historial.",
+        codeExample: `// Entidades y sus operaciones disponibles
+
+// Sensor: CRUD completo (administrable)
+POST   /api/sensors          ✅ Crear
+GET    /api/sensors          ✅ Consultar
+PUT    /api/sensors/{id}     ✅ Actualizar rangos
+DELETE /api/sensors/{id}     ✅ Desactivar
+
+// Reading: Solo CR (dato histórico)
+POST   /api/readings         ✅ Crear (proceso FIWARE)
+GET    /api/readings         ✅ Consultar historial
+PUT    /api/readings/{id}    ❌ No existe (¿editar historia?)
+DELETE /api/readings/{id}    ❌ No existe (¿borrar realidad?)
+
+// Principio: inmutabilidad de datos de auditoría`,
+        simpleExplanation: "📜 Las lecturas son como el registro histórico del tiempo:\n\n**El noticiario dice**: \"Ayer hizo 38°C en Cochabamba\"\n¿Puedes ir al noticiero y cambiar ese dato a 25°C? ❌\n¿Puedes pedirle que lo borre? ❌\nYa ocurrió — es historia.\n\n**Las lecturas de sensor son iguales**:\n- El sensor registró 38°C a las 14:00 ✅ → Dato real\n- Editarlo → Historial corrupto ❌\n- Borrarlo → Pérdida de datos ❌\n\n🎯 Esto también simplificaba el código: el Repository de Readings solo necesitaba AddAsync y las queries de LINQ con filtros."
+    },
+    {
+        id: 74,
+        category: "backend",
+        question: "¿Cómo se integraba SignalR con Angular en el proyecto de invernaderos?",
+        answer: "El backend tenía un Hub de SignalR y Angular usaba la librería oficial @microsoft/signalr (disponible en npm) para conectarse y recibir actualizaciones en tiempo real.",
+        codeExample: `// BACKEND: Hub en ASP.NET Core 3.1
+public class ReadingsHub : Hub {
+    public async Task SendReading(ReadingDto reading) {
+        await Clients.All.SendAsync("ReceiveReading", reading);
+    }
+}
+
+// En Startup.cs:
+services.AddSignalR();
+app.UseEndpoints(endpoints => {
+    endpoints.MapHub<ReadingsHub>("/hubs/readings");
+});
+
+// FRONTEND: Angular con @microsoft/signalr
+// npm install @microsoft/signalr
+
+import * as signalR from '@microsoft/signalr';
+
+const connection = new signalR.HubConnectionBuilder()
+    .withUrl('/hubs/readings')
+    .withAutomaticReconnect()  // Si pierde conexión, reconecta solo
+    .build();
+
+connection.on('ReceiveReading', (reading: ReadingDto) => {
+    // Angular actualiza la vista automáticamente
+    this.readings.unshift(reading);
+});
+
+await connection.start();`,
+        simpleExplanation: "📡 Era como una suscripción a notificaciones:\n\n**Sin SignalR**:\nAngular pregunta cada 5s: \"¿Hay datos?\"\nServidor: \"No... No... No... Sí!\"\n→ 11 peticiones innecesarias 😰\n\n**Con SignalR**:\nAngular: \"Me suscribo a ReceiveReading\"\nServidor: ... (silencio) ...\nLlega lectura nueva\nServidor: \"¡Oye Angular, llegó esto!\"\nAngular: recibe y actualiza la vista 😊\n\n🎯 El POC demostró que era técnicamente viable. Yo hice el Hub en el backend. El equipo frontend conectó Angular con @microsoft/signalr de npm."
+    },
+    {
+        id: 75,
+        category: "backend",
+        question: "¿Cómo se manejaba el token de autenticación en la conexión de SignalR con Angular?",
+        answer: "El token JWT se enviaba como query parameter en la URL de conexión al Hub, ya que SignalR WebSockets no admite headers HTTP personalizados.",
+        codeExample: `// Angular: Token en la conexión SignalR
+const token = localStorage.getItem('token');
+
+const connection = new signalR.HubConnectionBuilder()
+    .withUrl('/hubs/readings', {
+        // WebSockets no admite headers HTTP
+        // El token va en la query string
+        accessTokenFactory: () => token
+    })
+    .build();
+
+// Resultado: wss://servidor/hubs/readings?access_token=eyJhbGc...
+
+// BACKEND: Hub extrae el token automáticamente
+// ASP.NET Core Identity lo valida
+[Authorize]  // ← Protege el Hub
+public class ReadingsHub : Hub { }`,
+        simpleExplanation: "🔐 WebSockets y tokens tienen una peculiaridad:\n\n**HTTP normal**:\nPuedes enviar headers: Authorization: Bearer token ✅\n\n**WebSockets**:\nNo admite headers personalizados en la conexión inicial ❌\n\n**Solución de SignalR**:\nEnvía el token en la URL: wss://server/hub?access_token=... ✅\nEl servidor lo extrae automáticamente\nIdentity lo valida igual que un header\n\n🎯 Fue algo que descubrí trabajando en el POC — los WebSockets tienen restricciones que el HTTP normal no tiene."
+    },
+    {
+        id: 76,
+        category: "backend",
+        question: "¿Por qué era crucial documentar los endpoints en Postman cuando había múltiples equipos (Backend, Frontend Angular, QA, IoT)?",
+        answer: "Porque cada equipo dependía del contrato de la API para trabajar en paralelo. Postman era la fuente de verdad compartida que evitaba bloqueos entre equipos.",
+        codeExample: `// Sin documentación → Bloqueos
+Equipo Angular: "¿Qué campos devuelve /api/readings?"
+Backend: "Pregúntale al senior que está en junta..."
+Angular: 😴 (espera bloqueado)
+
+// Con Postman Collections compartidas
+// Colección: Invernadero API v1
+├── Sensores
+│   ├── GET /api/sensors         ← Ejemplo respuesta ✅
+│   ├── POST /api/sensors        ← Body + respuesta ✅
+│   └── PUT /api/sensors/{id}    ← Body + respuesta ✅
+├── Lecturas
+│   └── GET /api/readings        ← Params + respuesta ✅
+└── Auth
+    └── POST /api/auth/login     ← Body + token ✅
+
+// Cada equipo consultaba Postman de forma independiente`,
+        simpleExplanation: "📚 Postman era el diccionario compartido de 3 equipos:\n\n**Equipo Angular** (México):\n\"¿Qué devuelve /api/sensors?\"\n→ Mira Postman → Trabaja solo 😊\n\n**Equipo QA**:\n\"¿Cómo pruebo el login?\"\n→ Mira Postman → Prueba solo 😊\n\n**Equipo IoT**:\n\"¿Cómo está esperando el backend los datos?\"\n→ Mira Postman → Configura FIWARE 😊\n\n🎯 Sin Postman: Los 3 equipos me interrumpían constantemente. Con Postman: Trabajaban de forma autónoma. La documentación era el puente entre los 3 equipos distribuidos."
+    },
+    {
+        id: 77,
+        category: "backend",
+        question: "¿Cómo respondía el backend cuando Angular enviaba un token con rol incorrecto para un endpoint protegido?",
+        answer: "ASP.NET Core Identity devolvía automáticamente un 403 Forbidden. Angular debía manejar ese código para redirigir o mostrar un mensaje de acceso denegado.",
+        codeExample: `// Backend: endpoint protegido por rol
+[Authorize(Roles = "Admin")]
+[HttpDelete("{id}")]
+public async Task<IActionResult> DeleteSensor(int id) {
+    await _service.DeleteAsync(id);
+    return NoContent(); // 204
+}
+
+// Si un Técnico llama a este endpoint:
+// → Identity verifica el token
+// → Ve que el rol es "Tecnico", no "Admin"
+// → Responde: 403 Forbidden
+// → Angular recibe el 403 en el Observable
+
+// Angular maneja el error:
+this.sensorService.delete(id).subscribe({
+  next: () => console.log('Eliminado'),
+  error: (err) => {
+    if (err.status === 403) {
+      // Redirige o muestra mensaje
+      alert('No tienes permisos para esta acción');
+    }
+  }
+});`,
+        simpleExplanation: "🚦 El sistema de roles generaba respuestas claras:\n\n**401 Unauthorized**: No tienes token (no estás autenticado)\n→ Angular redirige al login\n\n**403 Forbidden**: Tienes token pero tu rol no alcanza\n→ Angular muestra \"Sin permisos\"\n\n**204 No Content**: Operación exitosa, sin datos que devolver\n→ Angular actualiza la lista\n\n🎯 Esto era el resultado de Identity + atributo [Authorize] en el backend + manejo de errores en el Observable de Angular. Los tres niveles trabajando juntos."
+    },
+    {
+        id: 78,
+        category: "backend",
+        question: "¿Puedes describir el flujo completo del sistema de invernaderos, de punta a punta?",
+        answer: "Desde el sensor físico pasando por Cloudino, FIWARE, el backend .NET y hasta el dashboard Angular, incluyendo el flujo de escritura, lectura y administración.",
+        codeExample: `// ESCRITURA (automatizada):
+Sensor físico
+    → Cloudino (Arduino + WiFi)
+    → FIWARE Orion (NGSIv2)
+    → Backend: polling con IHttpClientFactory
+    → DTO externo → entidad interna
+    → ReadingRepository.AddAsync()
+    → SQL Server
+
+// LECTURA (técnico):
+Angular HttpClient: GET /api/readings?sensorId=5&from=...
+(token via HTTP Interceptor)
+    → ReadingsController
+    → ReadingService
+    → ReadingRepository (LINQ + índice compuesto)
+    → SQL Server → 200ms (antes: 8s)
+    → Entidad → DTO → JSON
+    → Angular Observable → tabla/gráfica
+
+// ADMINISTRACIÓN (admin):
+Angular: POST/PUT/DELETE /api/sensors
+(token rol Admin via Interceptor)
+    → SensorsController [Authorize(Roles="Admin")]
+    → SensorService (validación negocio)
+    → SensorRepository (EF Core)
+    → SQL Server
+
+// TIEMPO REAL (POC):
+Nueva lectura llega al backend
+    → ReadingsHub.SendReading()
+    → @microsoft/signalr en Angular
+    → Vista se actualiza sin recargar`,
+        simpleExplanation: "🗺️ El mapa completo del sistema:\n\n**3 equipos, 1 sistema:**\n\n🤖 **Equipo IoT (México)**: Cloudino + FIWARE\n💻 **Yo (Bolivia)**: Backend .NET — el puente\n🖥️ **Equipo Frontend**: Dashboard Angular\n\n**El backend era el corazón**:\n- Recibía datos de FIWARE (via IHttpClientFactory)\n- Los guardaba en SQL Server (via EF Core + Repository)\n- Los exponía a Angular (via endpoints REST)\n- Los protegía (via Identity + roles)\n- Los entregaba rápido (via índices compuestos)\n- Los empujaba en tiempo real (via SignalR — POC)\n\n🎯 Cada bullet de tu CV era una pieza de este flujo completo."
     }
 ];
